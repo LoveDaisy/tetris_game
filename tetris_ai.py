@@ -108,6 +108,6 @@ class TetrisAI(object):
 
         absDy = sum([abs(x) for x in roofDy])
 
-        return fullLines * 3 + nearFullLines * 1.4 - vHoles * 1.8 - hHoles * 0.0 - vBlocks * 0.1 - maxHeight * 0.05 \
+        return fullLines * 3 + nearFullLines * 1.4 - vHoles ** 2 * 0.5 - hHoles * 0.0 - vBlocks * 0.1 - maxHeight * 0.05 \
             - stdY * 0.0 - stdDY * 0.05 - absDy * 0.2
 
