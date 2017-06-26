@@ -128,9 +128,9 @@ class TetrisAI(object):
                     holeCandidates[x] += 1
                 else:
                     hasBlock = True
-                    roofY[x] = y
+                    roofY[x] = height - y
                     if holeCandidates[x] > 0:
-                        holeConfirm[x] = holeCandidates[x]
+                        holeConfirm[x] += holeCandidates[x]
                         holeCandidates[x] = 0
                     if holeConfirm[x] > 0:
                         vBlocks += 1
