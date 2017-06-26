@@ -90,40 +90,54 @@ class TetrisAI(object):
         # Term 2: max height
         # Term 3: vertical holes
         # Term 5: roof roughness
-        maxHeight = 0
-        roofY = [0] * width
-        vHoles, vBlocks = 0, 0
-        for x in range(width):
-            vHoleFlag = False
-            tmpHoles, tmpBlocks = 0, 0
-            for y in range(height):
-                if step1Board[y, x] != Shape.shapeNone:
-                    if not vHoleFlag:
-                        roofY[x] = height - y
-                        if height - y > maxHeight:
-                            maxHeight = height - y
-                    else:
-                        tmpBlocks += 1
-                    vHoleFlag = True
-                else:
-                    if vHoleFlag:
-                        tmpHoles += 1
-            if tmpHoles > 0:
-                vBlocks += tmpBlocks
-            vHoles += tmpHoles
+        # maxHeight = 0
+        # roofY = [0] * width
+        # vHoles, vBlocks = 0, 0
+        # for x in range(width):
+        #     vHoleFlag = False
+        #     tmpHoles, tmpBlocks = 0, 0
+        #     for y in range(height):
+        #         if step1Board[y, x] != Shape.shapeNone:
+        #             if not vHoleFlag:
+        #                 roofY[x] = height - y
+        #                 if height - y > maxHeight:
+        #                     maxHeight = height - y
+        #             else:
+        #                 tmpBlocks += 1
+        #             vHoleFlag = True
+        #         else:
+        #             if vHoleFlag:
+        #                 tmpHoles += 1
+        #     if tmpHoles > 0:
+        #         vBlocks += tmpBlocks
+        #     vHoles += tmpHoles
         # print(datetime.now() - t1)
 
         # Term 1: lines to be removed
         fullLines, nearFullLines = 0, 0
-        for y in range(height - 1, height - maxHeight, -1):
+        roofY = [0] * width
+        holeCandidates = [0] * width
+        holeConfirm = [0] * width
+        vHoles, vBlocks = 0, 0
+        for y in range(height - 1, -1, -1):
             hasHole = False
+            hasBlock = False
             for x in range(width):
                 if step1Board[y, x] == Shape.shapeNone:
                     hasHole = True
-                    break
-            if not hasHole:
+                    holeCandidates[x] += 1
+                else:
+                    hasBlock = True
+                    roofY[x] = y
+                    if holeCandidates[x] > 0:
+                        holeConfirm[x] = holeCandidates[x]
+                        holeCandidates[x] = 0
+                    if holeConfirm[x] > 0:
+                        vBlocks += 1
+            if not hasHole and hasBlock:
                 fullLines += 1
-        maxHeight -= fullLines
+        vHoles = sum(holeConfirm)
+        maxHeight = max(roofY) - fullLines
         # print(datetime.now() - t1)
 
         roofDy = [roofY[i] - roofY[i+1] for i in range(len(roofY) - 1)]
