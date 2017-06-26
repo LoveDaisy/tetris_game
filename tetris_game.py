@@ -16,12 +16,14 @@ class Tetris(QMainWindow):
         super().__init__()
         self.isStarted = False
         self.isPaused = False
+        self.nextMove = None
+        self.lastShape = Shape.shapeNone
 
         self.initUI()
 
     def initUI(self):
         self.gridSize = 22
-        self.speed = 50
+        self.speed = 10
 
         self.timer = QBasicTimer()
         self.setFocusPolicy(Qt.StrongFocus)
@@ -84,22 +86,27 @@ class Tetris(QMainWindow):
 
     def timerEvent(self, event):
         if event.timerId() == self.timer.timerId():
-            if TETRIS_AI:
-                nextMove = TETRIS_AI.nextMove()
-                if nextMove:
-                    k = 0
-                    while BOARD_DATA.currentDirection != nextMove[0] and k < 4:
-                        BOARD_DATA.rotateRight()
-                        k += 1
-                    k = 0
-                    while BOARD_DATA.currentX != nextMove[1] and k < 5:
-                        if BOARD_DATA.currentX > nextMove[1]:
-                            BOARD_DATA.moveLeft()
-                        else:
-                            BOARD_DATA.moveRight()
-                        k += 1
-            self.tboard.score += BOARD_DATA.dropDown()
-            # self.tboard.score += BOARD_DATA.moveDown()
+            if TETRIS_AI and not self.nextMove:
+                self.nextMove = TETRIS_AI.nextMove()
+            if self.nextMove:
+                k = 0
+                while BOARD_DATA.currentDirection != self.nextMove[0] and k < 4:
+                    BOARD_DATA.rotateRight()
+                    k += 1
+                k = 0
+                while BOARD_DATA.currentX != self.nextMove[1] and k < 5:
+                    if BOARD_DATA.currentX > self.nextMove[1]:
+                        BOARD_DATA.moveLeft()
+                    elif BOARD_DATA.currentX < self.nextMove[1]:
+                        BOARD_DATA.moveRight()
+                    k += 1
+                # print(self.nextMove[2], self.nextMove[0], self.nextMove[1], BOARD_DATA.currentDirection, BOARD_DATA.currentX)
+            # lines = BOARD_DATA.dropDown()
+            lines = BOARD_DATA.moveDown()
+            self.tboard.score += lines
+            if self.lastShape != BOARD_DATA.currentShape:
+                self.nextMove = None
+                self.lastShape = BOARD_DATA.currentShape
             self.updateWindow()
         else:
             super(Tetris, self).timerEvent(event)
