@@ -36,21 +36,13 @@ class TetrisAI(object):
         dy = BOARD_DATA.height - 1
         for x, y in shape.getCoords(direction, x0, 0):
             yy = 0
-            while yy + y < BOARD_DATA.height and (yy + y < 0 or data[x + (y + yy) * BOARD_DATA.width] == Shape.shapeNone):
+            while yy + y < BOARD_DATA.height and (yy + y < 0 or data[(y + yy), x] == Shape.shapeNone):
                 yy += 1
             yy -= 1
             if yy < dy:
                 dy = yy
         for x, y in shape.getCoords(direction, x0, 0):
-            data[x + (y + dy) * BOARD_DATA.width] = shape.shape
-
-    def printBoard(self, data):
-        for y in range(BOARD_DATA.height):
-            line = ""
-            for x in range(BOARD_DATA.width):
-                line += "{0},".format(data[x + y * BOARD_DATA.width])
-            print(line)
-        print()
+            data[(y + dy), x] = shape.shape
 
     def calculateScore(self, d0, x0, d1, x1):
         # print("calculateScore")
@@ -58,7 +50,7 @@ class TetrisAI(object):
         width = BOARD_DATA.width
         height = BOARD_DATA.height
 
-        board = np.array(BOARD_DATA.getData())
+        board = np.array(BOARD_DATA.getData()).reshape((BOARD_DATA.height, BOARD_DATA.width))
         
         self.dropDown(board, BOARD_DATA.currentShape, d0, x0)
         self.dropDown(board, BOARD_DATA.nextShape, d1, x1)
@@ -69,7 +61,7 @@ class TetrisAI(object):
         roofY = []
         for x in range(width):
             y = 0
-            while y < height and board[x + y * width] == Shape.shapeNone:
+            while y < height and board[y, x] == Shape.shapeNone:
                 y += 1
             roofY.append(height - y)
             if height - y > maxHeight:
@@ -81,7 +73,7 @@ class TetrisAI(object):
         for y in range(height - 1, height - maxHeight, -1):
             tmpCounts = 0
             for x in range(width):
-                if board[x + y * width] != Shape.shapeNone:
+                if board[y, x] != Shape.shapeNone:
                     tmpCounts += 1
             if tmpCounts == width:
                 fullLines += 1
@@ -97,7 +89,7 @@ class TetrisAI(object):
             tmpHoles = 0
             vHoleFlag = False
             for y in range(height - 1, 0, -1):
-                if board[x + y * width] == Shape.shapeNone:
+                if board[y, x] == Shape.shapeNone:
                     tmpHoles += 1
                     vHoleFlag = True
                 else:
