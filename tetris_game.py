@@ -2,73 +2,66 @@
 # -*- coding: utf-8 -*-
 
 import sys, random
-from PyQt5.QtWidgets import QMainWindow, QFrame, QDesktopWidget, QApplication
+from PyQt5.QtWidgets import QMainWindow, QFrame, QDesktopWidget, QApplication, QHBoxLayout, QLabel
 from PyQt5.QtCore import Qt, QBasicTimer, pyqtSignal
 from PyQt5.QtGui import QPainter, QColor
 
-from tetris_model import BoardData, Shape
-from tetris_ai import TetrisAI
+from tetris_model import BOARD_DATA, Shape
+from tetris_ai import TETRIS_AI
 
+# TETRIS_AI = None
 
 class Tetris(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.isStarted = False
+        self.isPaused = False
+
         self.initUI()
 
     def initUI(self):
-        self.tboard = Board(self)
-        self.setCentralWidget(self.tboard)
+        self.gridSize = 22
+        self.speed = 50
+
+        self.timer = QBasicTimer()
+        self.setFocusPolicy(Qt.StrongFocus)
+
+        hLayout = QHBoxLayout()
+        self.tboard = Board(self, self.gridSize)
+        hLayout.addWidget(self.tboard)
+
+        self.sidePanel = SidePanel(self, self.gridSize)
+        hLayout.addWidget(self.sidePanel)
 
         self.statusbar = self.statusBar()
         self.tboard.msg2Statusbar[str].connect(self.statusbar.showMessage)
 
-        self.tboard.start()
+        self.start()
 
-        self.resize(200, 440)
         self.center()
         self.setWindowTitle('Tetris')
         self.show()
 
+        self.setFixedSize(self.tboard.width() + self.sidePanel.width(),
+                          self.sidePanel.height() + self.statusbar.height())
+
     def center(self):
         screen = QDesktopWidget().screenGeometry()
         size = self.geometry()
-        self.move((screen.width() - size.width()) / 2, (screen.height() - size.height()) / 2)
-
-
-class Board(QFrame):
-    msg2Statusbar = pyqtSignal(str)
-    boardData = BoardData()
-    speed = 10
-
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.initBoard()
-        self.ai = TetrisAI(Board.boardData)
-
-    def initBoard(self):
-        self.timer = QBasicTimer()
-        # self.isWaitingAfterLine = False
-
-        self.score = 0
-
-        self.setFocusPolicy(Qt.StrongFocus)
-        self.isStarted = False
-        self.isPaused = False
-        self.boardData.clear()
+        self.move((screen.width() - size.width()) // 2, (screen.height() - size.height()) // 2)
 
     def start(self):
         if self.isPaused:
             return
 
         self.isStarted = True
-        # self.isWaitingAfterLine = False
-        self.score = 0
-        self.boardData.clear()
+        self.tboard.score = 0
+        BOARD_DATA.clear()
 
-        self.msg2Statusbar.emit(str(self.score))
+        self.tboard.msg2Statusbar.emit(str(self.tboard.score))
 
-        self.boardData.createNewPiece()
-        self.timer.start(Board.speed, self)
+        BOARD_DATA.createNewPiece()
+        self.timer.start(self.speed, self)
 
     def pause(self):
         if not self.isStarted:
@@ -78,85 +71,42 @@ class Board(QFrame):
 
         if self.isPaused:
             self.timer.stop()
-            self.msg2Statusbar.emit("paused")
+            self.tboard.msg2Statusbar.emit("paused")
         else:
-            self.timer.start(Board.speed, self)
+            self.timer.start(self.speed, self)
 
-        self.updateData()
+        self.updateWindow()
+
+    def updateWindow(self):
+        self.tboard.updateData()
+        self.sidePanel.updateData()
+        self.update()
 
     def timerEvent(self, event):
         if event.timerId() == self.timer.timerId():
-            if self.ai:
-                nextMove = self.ai.nextMove()
+            if TETRIS_AI:
+                nextMove = TETRIS_AI.nextMove()
                 if nextMove:
                     k = 0
-                    while self.boardData.currentDirection != nextMove[0] and k < 4:
-                        self.boardData.rotateRight()
+                    while BOARD_DATA.currentDirection != nextMove[0] and k < 4:
+                        BOARD_DATA.rotateRight()
                         k += 1
                     k = 0
-                    while self.boardData.currentX != nextMove[1] and k < 5:
-                        if self.boardData.currentX > nextMove[1]:
-                            self.boardData.moveLeft()
+                    while BOARD_DATA.currentX != nextMove[1] and k < 5:
+                        if BOARD_DATA.currentX > nextMove[1]:
+                            BOARD_DATA.moveLeft()
                         else:
-                            self.boardData.moveRight()
+                            BOARD_DATA.moveRight()
                         k += 1
-                    self.score += self.boardData.dropDown()
-                    # self.score += self.boardData.moveDown()
-            else:
-                self.score += self.boardData.moveDown()
-            self.updateData()
+            self.tboard.score += BOARD_DATA.dropDown()
+            # self.tboard.score += BOARD_DATA.moveDown()
+            self.updateWindow()
         else:
-            super(Board, self).timerEvent(event)
-        print("score: {0}".format(self.score))
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        rect = self.contentsRect()
-
-        # Draw backboard
-        for x in range(BoardData.width):
-            for y in range(BoardData.height):
-                val = Board.boardData.getValue(x, y)
-                self.drawSquare(painter, x, y, val)
-
-        # Draw current shape
-        for x, y in Board.boardData.getCurrentShapeCoord():
-            val = Board.boardData.currentShape.shape
-            self.drawSquare(painter, x, y, val)
-
-    def squareWidth(self):
-        return self.contentsRect().width() // BoardData.width
-
-    def squareHeight(self):
-        return self.contentsRect().height() // BoardData.height
-
-    def drawSquare(self, painter, x, y, val):
-        colorTable = [0x000000, 0xCC6666, 0x66CC66, 0x6666CC,
-                      0xCCCC66, 0xCC66CC, 0x66CCCC, 0xDAAA00]
-
-        if val == 0:
-            return
-
-        dx = self.squareWidth()
-        dy = self.squareHeight()
-        x *= dx
-        y *= dy
-
-        color = QColor(colorTable[val])
-        painter.fillRect(x + 1, y + 1, dx - 2, dy - 2, color)
-
-        painter.setPen(color.lighter())
-        painter.drawLine(x, y + dy - 1, x, y)
-        painter.drawLine(x, y, x + dx - 1, y)
-
-        painter.setPen(color.darker())
-        painter.drawLine(x + 1, y + dy - 1, x + dx - 1, y + dy - 1)
-        painter.drawLine(x + dx - 1, y + dy - 1, x + dx - 1, y + 1)
+            super(Tetris, self).timerEvent(event)
 
     def keyPressEvent(self, event):
-        
-        if not self.isStarted or self.boardData.currentShape == Shape.shapeNone:
-            super(Board, self).keyPressEvent(event)
+        if not self.isStarted or BOARD_DATA.currentShape == Shape.shapeNone:
+            super(Tetris, self).keyPressEvent(event)
             return
 
         key = event.key()
@@ -168,19 +118,99 @@ class Board(QFrame):
         if self.isPaused:
             return
         elif key == Qt.Key_Left:
-            self.boardData.moveLeft()
+            BOARD_DATA.moveLeft()
         elif key == Qt.Key_Right:
-            self.boardData.moveRight()
+            BOARD_DATA.moveRight()
         elif key == Qt.Key_Down:
-            self.boardData.rotateRight()
+            BOARD_DATA.rotateRight()
         elif key == Qt.Key_Up:
-            self.boardData.rotateLeft()
+            BOARD_DATA.rotateLeft()
         elif key == Qt.Key_Space:
-            self.score += self.boardData.dropDown()
+            self.tboard.score += BOARD_DATA.dropDown()
         else:
-            super(Board, self).keyPressEvent(event)
+            super(Tetris, self).keyPressEvent(event)
 
-        self.updateData()
+        self.updateWindow()
+    #
+    # def paintEvent(self, event):
+    #     painter = QPainter(self)
+    #     painter.fillRect(self.rect(), QColor(0x000000))
+
+
+def drawSquare(painter, x, y, val, s):
+    colorTable = [0x000000, 0xCC6666, 0x66CC66, 0x6666CC,
+                  0xCCCC66, 0xCC66CC, 0x66CCCC, 0xDAAA00]
+
+    if val == 0:
+        return
+
+    color = QColor(colorTable[val])
+    painter.fillRect(x + 1, y + 1, s - 2, s - 2, color)
+
+    painter.setPen(color.lighter())
+    painter.drawLine(x, y + s - 1, x, y)
+    painter.drawLine(x, y, x + s - 1, y)
+
+    painter.setPen(color.darker())
+    painter.drawLine(x + 1, y + s - 1, x + s - 1, y + s - 1)
+    painter.drawLine(x + s - 1, y + s - 1, x + s - 1, y + 1)
+
+
+class SidePanel(QFrame):
+    def __init__(self, parent, gridSize):
+        super().__init__(parent)
+        self.setFixedSize(gridSize * 5, gridSize * BOARD_DATA.height)
+        self.move(gridSize * BOARD_DATA.width, 0)
+        self.gridSize = gridSize
+
+    def updateData(self):
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        minX, maxX, minY, maxY = BOARD_DATA.nextShape.getBoundingOffsets(0)
+
+        dy = 3 * self.gridSize
+        dx = (self.width() - (maxX - minX) * self.gridSize) / 2
+
+        val = BOARD_DATA.nextShape.shape
+        for x, y in BOARD_DATA.nextShape.getCoords(0, 0, -minY):
+            drawSquare(painter, x * self.gridSize + dx, y * self.gridSize + dy, val, self.gridSize)
+
+
+class Board(QFrame):
+    msg2Statusbar = pyqtSignal(str)
+    speed = 10
+
+    def __init__(self, parent, gridSize):
+        super().__init__(parent)
+        self.setFixedSize(gridSize * BOARD_DATA.width, gridSize * BOARD_DATA.height)
+        self.gridSize = gridSize
+        self.initBoard()
+
+    def initBoard(self):
+        self.score = 0
+        BOARD_DATA.clear()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+
+        # Draw backboard
+        for x in range(BOARD_DATA.width):
+            for y in range(BOARD_DATA.height):
+                val = BOARD_DATA.getValue(x, y)
+                drawSquare(painter, x * self.gridSize, y * self.gridSize, val, self.gridSize)
+
+        # Draw current shape
+        for x, y in BOARD_DATA.getCurrentShapeCoord():
+            val = BOARD_DATA.currentShape.shape
+            drawSquare(painter, x * self.gridSize, y * self.gridSize, val, self.gridSize)
+
+        # Draw a border
+        painter.setPen(QColor(0x777777))
+        painter.drawLine(self.width()-1, 0, self.width()-1, self.height())
+        painter.setPen(QColor(0xCCCCCC))
+        painter.drawLine(self.width(), 0, self.width(), self.height())
 
     def updateData(self):
         self.msg2Statusbar.emit(str(self.score))

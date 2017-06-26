@@ -76,6 +76,7 @@ class BoardData(object):
         self.currentY = -1
         self.currentDirection = 0
         self.currentShape = Shape()
+        self.nextShape = Shape(random.randint(1, 7))
 
         self.shapeStat = [0] * 8
 
@@ -89,14 +90,14 @@ class BoardData(object):
         return self.currentShape.getCoords(self.currentDirection, self.currentX, self.currentY)
 
     def createNewPiece(self):
-        tmpShape = Shape(random.randint(1, 7))
-        minX, maxX, minY, maxY = tmpShape.getBoundingOffsets(0)
+        minX, maxX, minY, maxY = self.nextShape.getBoundingOffsets(0)
         result = False
-        if self.tryMove(0, 5, -minY):
+        if self.tryMoveCurrent(0, 5, -minY):
             self.currentX = 5
             self.currentY = -minY
             self.currentDirection = 0
-            self.currentShape = tmpShape
+            self.currentShape = self.nextShape
+            self.nextShape = Shape(random.randint(1, 7))
             result = True
         else:
             self.currentShape = Shape()
@@ -105,11 +106,13 @@ class BoardData(object):
             self.currentDirection = 0
             result = False
         self.shapeStat[self.currentShape.shape] += 1
-        print(self.shapeStat)
         return result
 
-    def tryMove(self, direction, x, y):
-        for x, y in self.currentShape.getCoords(direction, x, y):
+    def tryMoveCurrent(self, direction, x, y):
+        return self.tryMove(self.currentShape, direction, x, y)
+
+    def tryMove(self, shape, direction, x, y):
+        for x, y in shape.getCoords(direction, x, y):
             if x >= BoardData.width or x < 0 or y >= BoardData.height or y < 0:
                 return False
             if self.backBoard[x + y * BoardData.width] > 0:
@@ -118,7 +121,7 @@ class BoardData(object):
 
     def moveDown(self):
         lines = 0
-        if self.tryMove(self.currentDirection, self.currentX, self.currentY + 1):
+        if self.tryMoveCurrent(self.currentDirection, self.currentX, self.currentY + 1):
             self.currentY += 1
         else:
             self.mergePiece()
@@ -127,7 +130,7 @@ class BoardData(object):
         return lines
 
     def dropDown(self):
-        while self.tryMove(self.currentDirection, self.currentX, self.currentY + 1):
+        while self.tryMoveCurrent(self.currentDirection, self.currentX, self.currentY + 1):
             self.currentY += 1
         self.mergePiece()
         lines = self.removeFullLines()
@@ -135,20 +138,20 @@ class BoardData(object):
         return lines
 
     def moveLeft(self):
-        if self.tryMove(self.currentDirection, self.currentX - 1, self.currentY):
+        if self.tryMoveCurrent(self.currentDirection, self.currentX - 1, self.currentY):
             self.currentX -= 1
 
     def moveRight(self):
-        if self.tryMove(self.currentDirection, self.currentX + 1, self.currentY):
+        if self.tryMoveCurrent(self.currentDirection, self.currentX + 1, self.currentY):
             self.currentX += 1
 
     def rotateRight(self):
-        if self.tryMove((self.currentDirection + 1) % 4, self.currentX, self.currentY):
+        if self.tryMoveCurrent((self.currentDirection + 1) % 4, self.currentX, self.currentY):
             self.currentDirection += 1
             self.currentDirection %= 4
 
     def rotateLeft(self):
-        if self.tryMove((self.currentDirection - 1) % 4, self.currentX, self.currentY):
+        if self.tryMoveCurrent((self.currentDirection - 1) % 4, self.currentX, self.currentY):
             self.currentDirection -= 1
             self.currentDirection %= 4
 
@@ -183,3 +186,6 @@ class BoardData(object):
         self.currentDirection = 0
         self.currentShape = Shape()
         self.backBoard = [0] * BoardData.width * BoardData.height
+
+
+BOARD_DATA = BoardData()
