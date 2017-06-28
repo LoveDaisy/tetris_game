@@ -225,7 +225,7 @@ class Board(QFrame):
 
 
 if __name__ == '__main__':
-    random.seed(32)
+    # random.seed(32)
     app = QApplication([])
     tetris = Tetris()
     sys.exit(app.exec_())

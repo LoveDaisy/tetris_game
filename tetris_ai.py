@@ -8,9 +8,6 @@ import numpy as np
 
 
 class TetrisAI(object):
-    def __init__(self):
-        self.dropDist0 = {}
-        self.dropDist1 = {}
 
     def nextMove(self):
         t1 = datetime.now()
@@ -44,22 +41,27 @@ class TetrisAI(object):
                 board = self.calcStep1Board(d0, x0)
                 for d1 in d1Range:
                     minX, maxX, _, _ = BOARD_DATA.nextShape.getBoundingOffsets(d1)
+                    dropDist = self.calcNextDropDist(board, d1, range(-minX, BOARD_DATA.width - maxX))
                     for x1 in range(-minX, BOARD_DATA.width - maxX):
-                        score = self.calculateScore(np.copy(board), d0, x0, d1, x1)
+                        score = self.calculateScore(np.copy(board), d1, x1, dropDist)
                         if not strategy or strategy[2] < score:
                             strategy = (d0, x0, score)
         print("===", datetime.now() - t1)
         return strategy
 
-    # def calcDropDist(self, data, shape, direction, x0):
-    #     res = []
-    #     for x, y in shape.getCoords(direction, x0, 0):
-    #         yy = 0
-    #         while yy + y < BOARD_DATA.height and (yy + y < 0 or data[(y + yy), x] == Shape.shapeNone):
-    #             yy += 1
-    #         yy -= 1
-    #         res.append[yy]
-    #     return res
+    def calcNextDropDist(self, data, d0, xRange):
+        res = {}
+        for x0 in xRange:
+            if x0 not in res:
+                res[x0] = BOARD_DATA.height - 1
+            for x, y in BOARD_DATA.nextShape.getCoords(d0, x0, 0):
+                yy = 0
+                while yy + y < BOARD_DATA.height and (yy + y < 0 or data[(y + yy), x] == Shape.shapeNone):
+                    yy += 1
+                yy -= 1
+                if yy < res[x0]:
+                    res[x0] = yy
+        return res
 
     def calcStep1Board(self, d0, x0):
         board = np.array(BOARD_DATA.getData()).reshape((BOARD_DATA.height, BOARD_DATA.width))
@@ -75,16 +77,22 @@ class TetrisAI(object):
             yy -= 1
             if yy < dy:
                 dy = yy
-        for x, y in shape.getCoords(direction, x0, 0):
-            data[(y + dy), x] = shape.shape
+        # print("dropDown: shape {0}, direction {1}, x0 {2}, dy {3}".format(shape.shape, direction, x0, dy))
+        self.dropDownByDist(data, shape, direction, x0, dy)
 
-    def calculateScore(self, step1Board, d0, x0, d1, x1):
+    def dropDownByDist(self, data, shape, direction, x0, dist):
+        for x, y in shape.getCoords(direction, x0, 0):
+            data[y + dist, x] = shape.shape
+
+    def calculateScore(self, step1Board, d1, x1, dropDist):
         # print("calculateScore")
         t1 = datetime.now()
         width = BOARD_DATA.width
         height = BOARD_DATA.height
 
-        self.dropDown(step1Board, BOARD_DATA.nextShape, d1, x1)
+        self.dropDownByDist(step1Board, BOARD_DATA.nextShape, d1, x1, dropDist[x1])
+        # print("dropDist: ", dropDist[x1])
+        # self.dropDown(step1Board, BOARD_DATA.nextShape, d1, x1)
         # print(datetime.now() - t1)
 
         # Term 1: lines to be removed
@@ -130,7 +138,7 @@ class TetrisAI(object):
         absDy = sum([abs(x) for x in roofDy])
         # print(datetime.now() - t1)
 
-        score = fullLines * 1.8 - vHoles * 1.0 - vBlocks * 0.5 - maxHeight ** 2 * 0.02 \
+        score = fullLines * 1.8 - vHoles * 1.0 - vBlocks * 0.5 - maxHeight ** 1.5 * 0.02 \
             - stdY * 0.0 - stdDY * 0.02 - absDy * 0.2
         # print(score, fullLines, vHoles, vBlocks, maxHeight, stdY, stdDY, absDy, roofY, d0, x0, d1, x1)
         return score
