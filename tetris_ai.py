@@ -48,7 +48,7 @@ class TetrisAI(object):
                         score = self.calculateScore(np.copy(board), d0, x0, d1, x1)
                         if not strategy or strategy[2] < score:
                             strategy = (d0, x0, score)
-        print(datetime.now() - t1)
+        print("===", datetime.now() - t1)
         return strategy
 
     # def calcDropDist(self, data, shape, direction, x0):
@@ -87,32 +87,6 @@ class TetrisAI(object):
         self.dropDown(step1Board, BOARD_DATA.nextShape, d1, x1)
         # print(datetime.now() - t1)
 
-        # Term 2: max height
-        # Term 3: vertical holes
-        # Term 5: roof roughness
-        # maxHeight = 0
-        # roofY = [0] * width
-        # vHoles, vBlocks = 0, 0
-        # for x in range(width):
-        #     vHoleFlag = False
-        #     tmpHoles, tmpBlocks = 0, 0
-        #     for y in range(height):
-        #         if step1Board[y, x] != Shape.shapeNone:
-        #             if not vHoleFlag:
-        #                 roofY[x] = height - y
-        #                 if height - y > maxHeight:
-        #                     maxHeight = height - y
-        #             else:
-        #                 tmpBlocks += 1
-        #             vHoleFlag = True
-        #         else:
-        #             if vHoleFlag:
-        #                 tmpHoles += 1
-        #     if tmpHoles > 0:
-        #         vBlocks += tmpBlocks
-        #     vHoles += tmpHoles
-        # print(datetime.now() - t1)
-
         # Term 1: lines to be removed
         fullLines, nearFullLines = 0, 0
         roofY = [0] * width
@@ -134,6 +108,8 @@ class TetrisAI(object):
                         holeCandidates[x] = 0
                     if holeConfirm[x] > 0:
                         vBlocks += 1
+            if not hasBlock:
+                break
             if not hasHole and hasBlock:
                 fullLines += 1
         vHoles = sum([x ** .7 for x in holeConfirm])
@@ -155,7 +131,7 @@ class TetrisAI(object):
         # print(datetime.now() - t1)
 
         score = fullLines * 1.8 - vHoles * 1.0 - vBlocks * 0.5 - maxHeight ** 2 * 0.02 \
-            - stdY * 0.0 - stdDY * 0.1 - absDy * 0.1
+            - stdY * 0.0 - stdDY * 0.05 - absDy * 0.15
         # print(score, fullLines, vHoles, vBlocks, maxHeight, stdY, stdDY, absDy, roofY, d0, x0, d1, x1)
         return score
 
