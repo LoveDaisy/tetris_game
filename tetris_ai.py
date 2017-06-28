@@ -136,7 +136,7 @@ class TetrisAI(object):
                         vBlocks += 1
             if not hasHole and hasBlock:
                 fullLines += 1
-        vHoles = sum(holeConfirm)
+        vHoles = sum([x ** .7 for x in holeConfirm])
         maxHeight = max(roofY) - fullLines
         # print(datetime.now() - t1)
 
@@ -154,8 +154,8 @@ class TetrisAI(object):
         absDy = sum([abs(x) for x in roofDy])
         # print(datetime.now() - t1)
 
-        score = fullLines * 3 - vHoles ** 2 * 0.5 - vBlocks * 0.1 - maxHeight * 0.05 \
-            - stdY * 0.0 - stdDY * 0.05 - absDy * 0.2
+        score = fullLines * 1.8 - vHoles * 1.0 - vBlocks * 0.5 - maxHeight ** 2 * 0.02 \
+            - stdY * 0.0 - stdDY * 0.1 - absDy * 0.1
         # print(score, fullLines, vHoles, vBlocks, maxHeight, stdY, stdDY, absDy, roofY, d0, x0, d1, x1)
         return score
 
