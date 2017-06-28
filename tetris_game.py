@@ -101,8 +101,8 @@ class Tetris(QMainWindow):
                         BOARD_DATA.moveRight()
                     k += 1
                 # print(self.nextMove[2], self.nextMove[0], self.nextMove[1], BOARD_DATA.currentDirection, BOARD_DATA.currentX)
-            lines = BOARD_DATA.dropDown()
-            # lines = BOARD_DATA.moveDown()
+            # lines = BOARD_DATA.dropDown()
+            lines = BOARD_DATA.moveDown()
             self.tboard.score += lines
             if self.lastShape != BOARD_DATA.currentShape:
                 self.nextMove = None
