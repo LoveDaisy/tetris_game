@@ -131,7 +131,7 @@ class TetrisAI(object):
         # print(datetime.now() - t1)
 
         score = fullLines * 1.8 - vHoles * 1.0 - vBlocks * 0.5 - maxHeight ** 2 * 0.02 \
-            - stdY * 0.0 - stdDY * 0.05 - absDy * 0.15
+            - stdY * 0.0 - stdDY * 0.02 - absDy * 0.2
         # print(score, fullLines, vHoles, vBlocks, maxHeight, stdY, stdDY, absDy, roofY, d0, x0, d1, x1)
         return score
 
