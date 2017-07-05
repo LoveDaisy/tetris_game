@@ -8,6 +8,12 @@ Need python3 and PyQt5 to be installed.
 * `tetris_model.py` is the data model for this game.
 * `tetris_ai.py` is the AI part.
 
+Run `tetris_game.py` from command line and you start to play or watch the AI playing.
+
+```shell
+$ python3 tetris_game.py
+```
+
 ### Play manually
 
 If you want play by yourself, you should uncomment this line in `tetris_game.py`:
