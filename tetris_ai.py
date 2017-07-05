@@ -91,8 +91,6 @@ class TetrisAI(object):
         height = BOARD_DATA.height
 
         self.dropDownByDist(step1Board, BOARD_DATA.nextShape, d1, x1, dropDist[x1])
-        # print("dropDist: ", dropDist[x1])
-        # self.dropDown(step1Board, BOARD_DATA.nextShape, d1, x1)
         # print(datetime.now() - t1)
 
         # Term 1: lines to be removed

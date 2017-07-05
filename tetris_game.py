@@ -100,9 +100,8 @@ class Tetris(QMainWindow):
                     elif BOARD_DATA.currentX < self.nextMove[1]:
                         BOARD_DATA.moveRight()
                     k += 1
-                # print(self.nextMove[2], self.nextMove[0], self.nextMove[1], BOARD_DATA.currentDirection, BOARD_DATA.currentX)
-            lines = BOARD_DATA.dropDown()
-            # lines = BOARD_DATA.moveDown()
+            # lines = BOARD_DATA.dropDown()
+            lines = BOARD_DATA.moveDown()
             self.tboard.score += lines
             if self.lastShape != BOARD_DATA.currentShape:
                 self.nextMove = None
@@ -128,8 +127,6 @@ class Tetris(QMainWindow):
             BOARD_DATA.moveLeft()
         elif key == Qt.Key_Right:
             BOARD_DATA.moveRight()
-        elif key == Qt.Key_Down:
-            BOARD_DATA.rotateRight()
         elif key == Qt.Key_Up:
             BOARD_DATA.rotateLeft()
         elif key == Qt.Key_Space:
@@ -138,10 +135,6 @@ class Tetris(QMainWindow):
             super(Tetris, self).keyPressEvent(event)
 
         self.updateWindow()
-    #
-    # def paintEvent(self, event):
-    #     painter = QPainter(self)
-    #     painter.fillRect(self.rect(), QColor(0x000000))
 
 
 def drawSquare(painter, x, y, val, s):

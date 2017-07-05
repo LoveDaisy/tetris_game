@@ -2,3 +2,4 @@ __pycache__
 .idea
 tmp.log
 **.prf
+**.DS_Store
