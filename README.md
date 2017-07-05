@@ -2,7 +2,7 @@
 
 It is a python implementatino of Tetris Game, and a simple AI to play game automatically.
 
-Need python3 and PyQt5 to be installed.
+Need python3, PyQt5 and NumPy to be installed.
 
 * `tetris_game.py` is the main application.
 * `tetris_model.py` is the data model for this game.
