@@ -16,6 +16,12 @@ If you want play by yourself, you should uncomment this line in `tetris_game.py`
 # TETRIS_AI = None
 ```
 
+Or just comment this line:
+
+```python
+from tetris_ai import TETRIS_AI
+```
+
 ### Play rules
 
 Just like classical Tetris Game. You use *up* key to rotate a shape, *left* key to move left and *right* key to move right. Also you can use *space* key to drop down current shape immediately. If you want a pause, just press *P* key. The right panel shows the next shape.
