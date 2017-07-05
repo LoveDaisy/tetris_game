@@ -136,11 +136,11 @@ class TetrisAI(object):
             stdDY = math.sqrt(sum([y ** 2 for y in roofDy]) / len(roofDy) - (sum(roofDy) / len(roofDy)) ** 2)
 
         absDy = sum([abs(x) for x in roofDy])
-        maxDy = max([abs(x) for x in roofDy])
+        maxDy = max(roofY) - min(roofY)
         # print(datetime.now() - t1)
 
         score = fullLines * 1.8 - vHoles * 1.0 - vBlocks * 0.5 - maxHeight ** 1.5 * 0.02 \
-            - stdY * 0.0 - stdDY * 0.01 - absDy * 0.2 - maxDy * 0.2
+            - stdY * 0.0 - stdDY * 0.01 - absDy * 0.2 - maxDy * 0.3
         # print(score, fullLines, vHoles, vBlocks, maxHeight, stdY, stdDY, absDy, roofY, d0, x0, d1, x1)
         return score
 
