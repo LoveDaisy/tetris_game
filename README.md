@@ -22,6 +22,16 @@ Or just comment this line:
 from tetris_ai import TETRIS_AI
 ```
 
+Current config could be too fast for human player. So you may want make it slower, by changing value of `Tetris.speed` defined here:
+
+```python
+class Tetris(QMainWindow):
+    ...
+    def initUI(self):
+        ...
+        self.speed = 10
+```
+
 ### Play rules
 
 Just like classical Tetris Game. You use *up* key to rotate a shape, *left* key to move left and *right* key to move right. Also you can use *space* key to drop down current shape immediately. If you want a pause, just press *P* key. The right panel shows the next shape.
