@@ -171,7 +171,8 @@ class SidePanel(QFrame):
         minX, maxX, minY, maxY = BOARD_DATA.nextShape.getBoundingOffsets(0)
 
         dy = 3 * self.gridSize
-        dx = (self.width() - (maxX - minX) * self.gridSize) / 2
+        dx = int((self.width() - (maxX - minX) * self.gridSize) / 2)
+
 
         val = BOARD_DATA.nextShape.shape
         for x, y in BOARD_DATA.nextShape.getCoords(0, 0, -minY):
@@ -194,7 +195,6 @@ class Board(QFrame):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-
         # Draw backboard
         for x in range(BOARD_DATA.width):
             for y in range(BOARD_DATA.height):
