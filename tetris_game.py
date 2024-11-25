@@ -54,18 +54,23 @@ class Tetris(QMainWindow):
         self.move((screen.width() - size.width()) // 2, (screen.height() - size.height()) // 2)
 
     def start(self):
-        if self.isPaused:
-            return
+    if self.isPaused:
+        return
 
-        self.isStarted = True
-        self.isGameOver = False  # 추가: 게임 오버 상태 초기화
-        self.tboard.score = 0
-        BOARD_DATA.clear()
+    self.isStarted = True
+    self.isPaused = False 
+    self.tboard.score = 0
+    BOARD_DATA.clear()
 
-        self.tboard.msg2Statusbar.emit(str(self.tboard.score))
+    if BOARD_DATA.gameOver(): 
+        self.tboard.msg2Statusbar.emit("Game Over! Press R to Restart.")
+        self.timer.stop() 
+        return
 
-        BOARD_DATA.createNewPiece()
-        self.timer.start(self.speed, self)
+    self.tboard.msg2Statusbar.emit(str(self.tboard.score))
+    BOARD_DATA.createNewPiece()
+    self.timer.start(self.speed, self)
+
 
     def pause(self):
         if not self.isStarted or self.isGameOver:  # 수정: 게임 오버 상태에서는 일시 정지 불가
