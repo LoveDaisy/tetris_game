@@ -9,7 +9,7 @@ from PyQt5.QtGui import QPainter, QColor
 from tetris_model import BOARD_DATA, Shape
 from tetris_ai import TETRIS_AI
 
-# TETRIS_AI = None
+TETRIS_AI = None
 
 class Tetris(QMainWindow):
     def __init__(self):
@@ -18,12 +18,13 @@ class Tetris(QMainWindow):
         self.isPaused = False
         self.nextMove = None
         self.lastShape = Shape.shapeNone
+        self.isGameOver = False  # 추가: 게임 오버 상태를 체크하는 변수
 
         self.initUI()
 
     def initUI(self):
         self.gridSize = 22
-        self.speed = 10
+        self.speed = 100
 
         self.timer = QBasicTimer()
         self.setFocusPolicy(Qt.StrongFocus)
@@ -57,6 +58,7 @@ class Tetris(QMainWindow):
             return
 
         self.isStarted = True
+        self.isGameOver = False  # 추가: 게임 오버 상태 초기화
         self.tboard.score = 0
         BOARD_DATA.clear()
 
@@ -66,7 +68,7 @@ class Tetris(QMainWindow):
         self.timer.start(self.speed, self)
 
     def pause(self):
-        if not self.isStarted:
+        if not self.isStarted or self.isGameOver:  # 수정: 게임 오버 상태에서는 일시 정지 불가
             return
 
         self.isPaused = not self.isPaused
@@ -79,6 +81,14 @@ class Tetris(QMainWindow):
 
         self.updateWindow()
 
+    def gameOver(self):  # 추가: 게임 오버 상태 처리
+        self.isGameOver = True
+        self.timer.stop()
+        self.tboard.msg2Statusbar.emit("Game Over! Press R to Restart.")  # 상태바에 메시지 출력
+
+    def restartGame(self):  # 추가: 게임 재시작 기능
+        self.start()
+
     def updateWindow(self):
         self.tboard.updateData()
         self.sidePanel.updateData()
@@ -86,6 +96,10 @@ class Tetris(QMainWindow):
 
     def timerEvent(self, event):
         if event.timerId() == self.timer.timerId():
+            if not BOARD_DATA.moveDown():  # 추가: moveDown 실패 시 게임 오버 처리
+                self.gameOver()
+                return
+
             if TETRIS_AI and not self.nextMove:
                 self.nextMove = TETRIS_AI.nextMove()
             if self.nextMove:
@@ -100,9 +114,7 @@ class Tetris(QMainWindow):
                     elif BOARD_DATA.currentX < self.nextMove[1]:
                         BOARD_DATA.moveRight()
                     k += 1
-            # lines = BOARD_DATA.dropDown()
-            lines = BOARD_DATA.moveDown()
-            self.tboard.score += lines
+            self.tboard.score += BOARD_DATA.moveDown()  # 수정: 한 줄이 사라지면 점수 증가
             if self.lastShape != BOARD_DATA.currentShape:
                 self.nextMove = None
                 self.lastShape = BOARD_DATA.currentShape
@@ -117,11 +129,15 @@ class Tetris(QMainWindow):
 
         key = event.key()
         
-        if key == Qt.Key_P:
+        if key == Qt.Key_P and not self.isGameOver:  # 수정: 게임 오버 상태에서는 일시 정지 불가
             self.pause()
             return
+
+        if key == Qt.Key_R and self.isGameOver:  # 추가: R 키로 게임 재시작
+            self.restartGame()
+            return
             
-        if self.isPaused:
+        if self.isPaused or self.isGameOver:  # 수정: 일시 정지 또는 게임 오버 상태에서는 입력 불가
             return
         elif key == Qt.Key_Left:
             BOARD_DATA.moveLeft()
@@ -135,7 +151,7 @@ class Tetris(QMainWindow):
             super(Tetris, self).keyPressEvent(event)
 
         self.updateWindow()
-
+        
 
 def drawSquare(painter, x, y, val, s):
     colorTable = [0x000000, 0xCC6666, 0x66CC66, 0x6666CC,
