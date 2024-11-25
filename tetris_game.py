@@ -54,22 +54,22 @@ class Tetris(QMainWindow):
         self.move((screen.width() - size.width()) // 2, (screen.height() - size.height()) // 2)
 
     def start(self):
-    if self.isPaused:
-        return
+        if self.isPaused:
+            return
 
-    self.isStarted = True
-    self.isPaused = False 
-    self.tboard.score = 0
-    BOARD_DATA.clear()
+        self.isStarted = True
+        self.isPaused = False 
+        self.tboard.score = 0
+        BOARD_DATA.clear()
 
-    if BOARD_DATA.gameOver(): 
-        self.tboard.msg2Statusbar.emit("Game Over! Press R to Restart.")
-        self.timer.stop() 
-        return
+        if BOARD_DATA.gameOver(): 
+            self.tboard.msg2Statusbar.emit("Game Over! Press R to Restart.")
+            self.timer.stop() 
+            return
 
-    self.tboard.msg2Statusbar.emit(str(self.tboard.score))
-    BOARD_DATA.createNewPiece()
-    self.timer.start(self.speed, self)
+        self.tboard.msg2Statusbar.emit(str(self.tboard.score))
+        BOARD_DATA.createNewPiece()
+        self.timer.start(self.speed, self)
 
 
     def pause(self):
