@@ -1,22 +1,11 @@
-# 게임 오버 상태 체크
-if BOARD_DATA.gameOver():
-    self.gameOver()
+1.Restart Functionality
 
-# 게임 오버 처리
-def gameOver(self):
-    self.tboard.msg2Statusbar.emit("Game Over! Press R to Restart.")
-    self.isPaused = True
-    self.timer.stop()
+Pressing the R key resets the game.
+The game board is cleared, and a new Tetris piece is spawned.
 
-# 키 입력 처리
-def keyPressEvent(self, event):
-    if self.isPaused and event.key() == Qt.Key_R:  # 게임 오버 상태에서만 R 키 활성화
-        self.restartGame()
-    else:
-        super(Tetris, self).keyPressEvent(event)
+2.Game Over State Handling
 
-# 게임 재시작
-def restartGame(self):
-    self.isPaused = False
-    self.tboard.initBoard()  # 보드 데이터 초기화
-    self.start()  # 게임 재시작
+The game now detects when the player has lost(Game Over).
+When the game is over, a "Game Over!" message is displayed on the screen in red.
+During the Game Over state, all controls except the restart (R) key are disabled.
+Add gameOver method to detect game over condition in model.py
