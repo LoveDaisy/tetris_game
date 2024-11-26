@@ -187,5 +187,11 @@ class BoardData(object):
         self.currentShape = Shape()
         self.backBoard = [0] * BoardData.width * BoardData.height
 
+    def gameOver(self):
+        for x in range(BoardData.width):
+            if self.backBoard[x] > 0:
+                return True
+        return False
+
 
 BOARD_DATA = BoardData()
