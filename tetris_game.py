@@ -6,6 +6,8 @@ from PyQt5.QtGui import QPainter, QColor, QFont
 from tetris_model import BOARD_DATA, Shape
 from tetris_ai import TETRIS_AI
 
+# TETRIS_AI = None
+
 class Tetris(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -104,7 +106,6 @@ class Tetris(QMainWindow):
             lines = BOARD_DATA.moveDown()
             self.tboard.score += lines
 
-            # 게임 오버 상태 확인
             if BOARD_DATA.gameOver():
                 self.gameOver()
                 return
