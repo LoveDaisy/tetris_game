@@ -1,10 +1,7 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-
 import sys, random
 from PyQt5.QtWidgets import QMainWindow, QFrame, QDesktopWidget, QApplication, QHBoxLayout, QLabel
 from PyQt5.QtCore import Qt, QBasicTimer, pyqtSignal
-from PyQt5.QtGui import QPainter, QColor
+from PyQt5.QtGui import QPainter, QColor, QFont
 
 from tetris_model import BOARD_DATA, Shape
 from tetris_ai import TETRIS_AI
@@ -16,6 +13,7 @@ class Tetris(QMainWindow):
         super().__init__()
         self.isStarted = False
         self.isPaused = False
+        self.isGameOver = False
         self.nextMove = None
         self.lastShape = Shape.shapeNone
 
@@ -23,7 +21,7 @@ class Tetris(QMainWindow):
 
     def initUI(self):
         self.gridSize = 22
-        self.speed = 10
+        self.speed = 100
 
         self.timer = QBasicTimer()
         self.setFocusPolicy(Qt.StrongFocus)
@@ -57,6 +55,7 @@ class Tetris(QMainWindow):
             return
 
         self.isStarted = True
+        self.isGameOver = False
         self.tboard.score = 0
         BOARD_DATA.clear()
 
@@ -66,14 +65,14 @@ class Tetris(QMainWindow):
         self.timer.start(self.speed, self)
 
     def pause(self):
-        if not self.isStarted:
+        if not self.isStarted or self.isGameOver: 
             return
 
         self.isPaused = not self.isPaused
 
         if self.isPaused:
             self.timer.stop()
-            self.tboard.msg2Statusbar.emit("paused")
+            self.tboard.msg2Statusbar.emit("Paused")
         else:
             self.timer.start(self.speed, self)
 
@@ -86,6 +85,10 @@ class Tetris(QMainWindow):
 
     def timerEvent(self, event):
         if event.timerId() == self.timer.timerId():
+            if self.isGameOver:
+                self.timer.stop()
+                return
+
             if TETRIS_AI and not self.nextMove:
                 self.nextMove = TETRIS_AI.nextMove()
             if self.nextMove:
@@ -100,9 +103,13 @@ class Tetris(QMainWindow):
                     elif BOARD_DATA.currentX < self.nextMove[1]:
                         BOARD_DATA.moveRight()
                     k += 1
-            # lines = BOARD_DATA.dropDown()
             lines = BOARD_DATA.moveDown()
             self.tboard.score += lines
+
+            if BOARD_DATA.gameOver():
+                self.gameOver()
+                return
+
             if self.lastShape != BOARD_DATA.currentShape:
                 self.nextMove = None
                 self.lastShape = BOARD_DATA.currentShape
@@ -111,16 +118,21 @@ class Tetris(QMainWindow):
             super(Tetris, self).timerEvent(event)
 
     def keyPressEvent(self, event):
+        if self.isGameOver:
+            if event.key() == Qt.Key_R:
+                self.restartGame()
+            return
+
         if not self.isStarted or BOARD_DATA.currentShape == Shape.shapeNone:
             super(Tetris, self).keyPressEvent(event)
             return
 
         key = event.key()
-        
+
         if key == Qt.Key_P:
             self.pause()
             return
-            
+
         if self.isPaused:
             return
         elif key == Qt.Key_Left:
@@ -131,10 +143,101 @@ class Tetris(QMainWindow):
             BOARD_DATA.rotateLeft()
         elif key == Qt.Key_Space:
             self.tboard.score += BOARD_DATA.dropDown()
+        elif key == Qt.Key_R:
+            self.restartGame()
         else:
             super(Tetris, self).keyPressEvent(event)
 
         self.updateWindow()
+
+    def gameOver(self):
+        self.isGameOver = True
+        self.timer.stop()
+        self.tboard.msg2Statusbar.emit("Game Over! Press R to Restart.")
+        self.updateWindow()
+
+    def restartGame(self):
+        self.isPaused = False
+        self.isGameOver = False
+        self.tboard.score = 0
+        BOARD_DATA.clear()
+        BOARD_DATA.createNewPiece()
+        self.timer.start(self.speed, self)
+        self.updateWindow()
+
+
+class SidePanel(QFrame):
+    def __init__(self, parent, gridSize):
+        super().__init__(parent)
+        self.setFixedSize(gridSize * 5, gridSize * BOARD_DATA.height)
+        self.move(gridSize * BOARD_DATA.width, 0)
+        self.gridSize = gridSize
+
+    def updateData(self):
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        minX, maxX, minY, maxY = BOARD_DATA.nextShape.getBoundingOffsets(0)
+
+        dy = 3 * self.gridSize
+        dx = int((self.width() - (maxX - minX) * self.gridSize) / 2)
+
+        val = BOARD_DATA.nextShape.shape
+        for x, y in BOARD_DATA.nextShape.getCoords(0, 0, -minY):
+            drawSquare(painter, x * self.gridSize + dx, y * self.gridSize + dy, val, self.gridSize)
+
+
+class Board(QFrame):
+    msg2Statusbar = pyqtSignal(str)
+    speed = 10
+
+    def __init__(self, parent, gridSize):
+        super().__init__(parent)
+        self.setFixedSize(gridSize * BOARD_DATA.width, gridSize * BOARD_DATA.height)
+        self.gridSize = gridSize
+        self.initBoard()
+
+    def initBoard(self):
+        self.score = 0
+        BOARD_DATA.clear()
+
+    def gameOver(self):
+        spawn_x, spawn_y = self.width // 2, self.height - 1  
+        for x, y in self.getCurrentShapeCoord(spawn_x, spawn_y):
+            if self.getValue(x, y) != 0: 
+                return True
+        return False    
+
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+
+        for x in range(BOARD_DATA.width):
+            for y in range(BOARD_DATA.height):
+                val = BOARD_DATA.getValue(x, y)
+                drawSquare(painter, x * self.gridSize, y * self.gridSize, val, self.gridSize)
+
+        for x, y in BOARD_DATA.getCurrentShapeCoord():
+            val = BOARD_DATA.currentShape.shape
+            drawSquare(painter, x * self.gridSize, y * self.gridSize, val, self.gridSize)
+
+        if self.parent().isGameOver: 
+            self.drawGameOverMessage(painter)
+
+        painter.setPen(QColor(0x777777))
+        painter.drawLine(self.width()-1, 0, self.width()-1, self.height())
+        painter.setPen(QColor(0xCCCCCC))
+        painter.drawLine(self.width(), 0, self.width(), self.height())
+
+    def drawGameOverMessage(self, painter):
+        painter.setPen(QColor(255, 0, 0))
+        painter.setFont(QFont('Arial', 20, QFont.Bold))
+        painter.drawText(self.rect(), Qt.AlignCenter, "Game Over!")
+
+    def updateData(self):
+        self.msg2Statusbar.emit(str(self.score))
+        self.update()
 
 
 def drawSquare(painter, x, y, val, s):
@@ -156,69 +259,7 @@ def drawSquare(painter, x, y, val, s):
     painter.drawLine(x + s - 1, y + s - 1, x + s - 1, y + 1)
 
 
-class SidePanel(QFrame):
-    def __init__(self, parent, gridSize):
-        super().__init__(parent)
-        self.setFixedSize(gridSize * 5, gridSize * BOARD_DATA.height)
-        self.move(gridSize * BOARD_DATA.width, 0)
-        self.gridSize = gridSize
-
-    def updateData(self):
-        self.update()
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        minX, maxX, minY, maxY = BOARD_DATA.nextShape.getBoundingOffsets(0)
-
-        dy = 3 * self.gridSize
-        dx = int((self.width() - (maxX - minX) * self.gridSize) / 2)
-
-
-        val = BOARD_DATA.nextShape.shape
-        for x, y in BOARD_DATA.nextShape.getCoords(0, 0, -minY):
-            drawSquare(painter, x * self.gridSize + dx, y * self.gridSize + dy, val, self.gridSize)
-
-
-class Board(QFrame):
-    msg2Statusbar = pyqtSignal(str)
-    speed = 10
-
-    def __init__(self, parent, gridSize):
-        super().__init__(parent)
-        self.setFixedSize(gridSize * BOARD_DATA.width, gridSize * BOARD_DATA.height)
-        self.gridSize = gridSize
-        self.initBoard()
-
-    def initBoard(self):
-        self.score = 0
-        BOARD_DATA.clear()
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        # Draw backboard
-        for x in range(BOARD_DATA.width):
-            for y in range(BOARD_DATA.height):
-                val = BOARD_DATA.getValue(x, y)
-                drawSquare(painter, x * self.gridSize, y * self.gridSize, val, self.gridSize)
-
-        # Draw current shape
-        for x, y in BOARD_DATA.getCurrentShapeCoord():
-            val = BOARD_DATA.currentShape.shape
-            drawSquare(painter, x * self.gridSize, y * self.gridSize, val, self.gridSize)
-
-        # Draw a border
-        painter.setPen(QColor(0x777777))
-        painter.drawLine(self.width()-1, 0, self.width()-1, self.height())
-        painter.setPen(QColor(0xCCCCCC))
-        painter.drawLine(self.width(), 0, self.width(), self.height())
-
-    def updateData(self):
-        self.msg2Statusbar.emit(str(self.score))
-        self.update()
-
-
 if __name__ == '__main__':
-    # random.seed(32)
     app = QApplication([])
     tetris = Tetris()
     sys.exit(app.exec_())
